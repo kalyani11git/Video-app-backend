@@ -74,7 +74,7 @@ app.get("/videos", async (req, res) => {
       length: file.length,
       contentType: file.contentType,
       uploadDate: file.uploadDate,
-      videoUrl: `http://localhost:5000/video/${file._id}`, // Streaming URL
+      videoUrl: `https://video-app-backend-1.onrender.com/video/${file._id}`, // Streaming URL
     }));
 
     res.json(videoList);
