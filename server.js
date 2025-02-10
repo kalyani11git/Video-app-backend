@@ -125,6 +125,9 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     const fileId = new mongoose.Types.ObjectId(req.params.id);
     const { title } = req.body;
 
+    console.log("Request Body:", req.body);  // Log form data (title and video)
+    console.log("Uploaded File:", req.file); 
+
     // Check if the video file exists
     const file = await gridFSBucket.find({ _id: fileId }).toArray();
 
@@ -148,7 +151,7 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     if (req.file) {
       // Delete the old video
       await gridFSBucket.delete(fileId);
-      console.log(fileId);
+      console.log("Deleted old video:", fileId);
       
       // Upload the new video
       const readableStream = new stream.Readable();
@@ -178,9 +181,6 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     res.status(500).json({ error: "Failed to replace video", details: err.message });
   }
 });
-
-
-
 
 // Delete video
 app.delete("/video/:id", async (req, res) => {
