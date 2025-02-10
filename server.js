@@ -46,10 +46,8 @@ app.post("/upload", upload.single("video"), async (req, res) => {
     readableStream.pipe(uploadStream);
 
     uploadStream.on("finish", () => {
-      const videoUrl = `https://video-app-backend-1.onrender.com/video/${uploadStream.id}`;
-      res.json({ message: "Video replaced successfully!", fileId: uploadStream.id, videoUrl });
+      res.json({ message: "Video uploaded successfully!", fileId: uploadStream.id });
     });
-    
 
     uploadStream.on("error", (err) => {
       console.error("Upload error:", err);
@@ -124,11 +122,13 @@ app.get("/video/:id", async (req, res) => {
 // Replace (edit) video content
 app.put("/video/:id", upload.single("video"), async (req, res) => {
   try {
+    console.log("Request Body:", req.body);  // Log form data (title and video)
+    console.log("Uploaded File:", req.file); // Log the file
+
     const fileId = new mongoose.Types.ObjectId(req.params.id);
     const { title } = req.body;
 
-    console.log("Request Body:", req.body);  // Log form data (title and video)
-    console.log("Uploaded File:", req.file); 
+    console.log("File ID:", fileId);
 
     // Check if the video file exists
     const file = await gridFSBucket.find({ _id: fileId }).toArray();
@@ -145,16 +145,17 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
       );
 
       if (result.modifiedCount === 0) {
-        return res.status(400).json({ error: "Failed to update title" });
+        console.log("No title was updated, the title might be the same.");
       }
     }
 
     // Replace video if a new video file is provided
     if (req.file) {
+      console.log("New video file received, replacing the old one...");
+
       // Delete the old video
       await gridFSBucket.delete(fileId);
-      console.log("Deleted old video:", fileId);
-      
+
       // Upload the new video
       const readableStream = new stream.Readable();
       readableStream.push(req.file.buffer);
@@ -183,6 +184,7 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     res.status(500).json({ error: "Failed to replace video", details: err.message });
   }
 });
+
 
 // Delete video
 app.delete("/video/:id", async (req, res) => {
