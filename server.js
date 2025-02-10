@@ -46,8 +46,10 @@ app.post("/upload", upload.single("video"), async (req, res) => {
     readableStream.pipe(uploadStream);
 
     uploadStream.on("finish", () => {
-      res.json({ message: "Video uploaded successfully!", fileId: uploadStream.id });
+      const videoUrl = `https://video-app-backend-1.onrender.com/video/${uploadStream.id}`;
+      res.json({ message: "Video replaced successfully!", fileId: uploadStream.id, videoUrl });
     });
+    
 
     uploadStream.on("error", (err) => {
       console.error("Upload error:", err);
