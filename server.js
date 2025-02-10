@@ -134,7 +134,6 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
 
     // Update metadata if a title is provided
     if (title) {
-      // Update metadata using MongoDB's updateOne method
       const result = await conn.db.collection("videos.files").updateOne(
         { _id: fileId },
         { $set: { "metadata.title": title } }
@@ -149,7 +148,8 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     if (req.file) {
       // Delete the old video
       await gridFSBucket.delete(fileId);
-
+      console.log(fileId);
+      
       // Upload the new video
       const readableStream = new stream.Readable();
       readableStream.push(req.file.buffer);
@@ -175,9 +175,10 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     }
   } catch (err) {
     console.error("Replace video error:", err);
-    res.status(500).json({ error: "Failed to replace video" });
+    res.status(500).json({ error: "Failed to replace video", details: err.message });
   }
 });
+
 
 
 
