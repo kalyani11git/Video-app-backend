@@ -125,19 +125,24 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     const fileId = new mongoose.Types.ObjectId(req.params.id);
     const { title } = req.body;
 
-    // Check if either title or video file is provided
+    // Check if the video file exists
     const file = await gridFSBucket.find({ _id: fileId }).toArray();
 
     if (!file || file.length === 0) {
       return res.status(404).json({ error: "Video not found" });
     }
 
-    // Update metadata (if title is provided)
+    // Update metadata if a title is provided
     if (title) {
-      await gridFSBucket.update(
+      // Update metadata using MongoDB's updateOne method
+      const result = await conn.db.collection("videos.files").updateOne(
         { _id: fileId },
         { $set: { "metadata.title": title } }
       );
+
+      if (result.modifiedCount === 0) {
+        return res.status(400).json({ error: "Failed to update title" });
+      }
     }
 
     // Replace video if a new video file is provided
@@ -173,6 +178,7 @@ app.put("/video/:id", upload.single("video"), async (req, res) => {
     res.status(500).json({ error: "Failed to replace video" });
   }
 });
+
 
 
 // Delete video
