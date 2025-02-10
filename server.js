@@ -119,5 +119,82 @@ app.get("/video/:id", async (req, res) => {
   }
 });
 
+// Replace (edit) video content
+app.put("/video/:id", upload.single("video"), async (req, res) => {
+  try {
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
+    const { title } = req.body;
+
+    // Check if either title or video file is provided
+    const file = await gridFSBucket.find({ _id: fileId }).toArray();
+
+    if (!file || file.length === 0) {
+      return res.status(404).json({ error: "Video not found" });
+    }
+
+    // Update metadata (if title is provided)
+    if (title) {
+      await gridFSBucket.update(
+        { _id: fileId },
+        { $set: { "metadata.title": title } }
+      );
+    }
+
+    // Replace video if a new video file is provided
+    if (req.file) {
+      // Delete the old video
+      await gridFSBucket.delete(fileId);
+
+      // Upload the new video
+      const readableStream = new stream.Readable();
+      readableStream.push(req.file.buffer);
+      readableStream.push(null);
+
+      const uploadStream = gridFSBucket.openUploadStream(req.file.originalname, {
+        metadata: { title: title || file[0].metadata.title }, // Preserve the old title if not updated
+        chunkSizeBytes: 1048576, // 1MB chunk size for faster streaming
+      });
+
+      readableStream.pipe(uploadStream);
+
+      uploadStream.on("finish", () => {
+        res.json({ message: "Video replaced successfully!", fileId: uploadStream.id });
+      });
+
+      uploadStream.on("error", (err) => {
+        console.error("Upload error:", err);
+        res.status(500).json({ error: "Failed to upload new video" });
+      });
+    } else {
+      res.json({ message: "Metadata updated successfully!" });
+    }
+  } catch (err) {
+    console.error("Replace video error:", err);
+    res.status(500).json({ error: "Failed to replace video" });
+  }
+});
+
+
+// Delete video
+app.delete("/video/:id", async (req, res) => {
+  try {
+    const fileId = new mongoose.Types.ObjectId(req.params.id);
+
+    const file = await gridFSBucket.find({ _id: fileId }).toArray();
+
+    if (!file || file.length === 0) {
+      return res.status(404).json({ error: "Video not found" });
+    }
+
+    // Delete the video file
+    await gridFSBucket.delete(fileId);
+
+    res.json({ message: "Video deleted successfully" });
+  } catch (err) {
+    console.error("Delete video error:", err);
+    res.status(500).json({ error: "Failed to delete video" });
+  }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
